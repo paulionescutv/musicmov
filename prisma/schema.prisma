@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Guild {
+  id               String            @id
+  name             String?
+  language         String            @default("ro")
+  prefix           String            @default("/")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  musicSettings    MusicSettings?
+  members          Member[]
+  warnings         Warning[]
+  reactionRoles    ReactionRole[]
+  tickets          Ticket[]
+  customCommands   CustomCommand[]
+}
+
+model Member {
+  id          String   @id @default(cuid())
+  guildId     String
+  userId      String
+  xp          Int      @default(0)
+  level       Int      @default(0)
+  coins       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  guild       Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId])
+}
+
+model MusicSettings {
+  id             String   @id @default(cuid())
+  guildId        String   @unique
+  defaultVolume  Int      @default(100)
+  maxQueue       Int      @default(100)
+  autoplay       Boolean  @default(false)
+  djRoleId       String?
+  guild          Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+}
+
+model Warning {
+  id          String   @id @default(cuid())
+  guildId     String
+  userId      String
+  moderatorId String
+  reason      String
+  createdAt   DateTime @default(now())
+  guild       Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, userId])
+}
+
+model ReactionRole {
+  id            String   @id @default(cuid())
+  guildId       String
+  messageId     String
+  channelId     String
+  emoji         String
+  roleId        String
+  createdAt     DateTime @default(now())
+  guild         Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, messageId])
+}
+
+model Ticket {
+  id          String    @id @default(cuid())
+  guildId     String
+  channelId   String    @unique
+  userId      String
+  status      String    @default("open")
+  createdAt   DateTime  @default(now())
+  closedAt    DateTime?
+  guild       Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+}
+
+model CustomCommand {
+  id          String   @id @default(cuid())
+  guildId     String
+  name        String
+  response    String
+  createdAt   DateTime @default(now())
+  guild       Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, name])
+}
